@@ -200,4 +200,48 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 For issues and questions:
 - Open a GitHub issue
-- Contact the maintainers 
+- Contact the maintainers
+
+## Deployment on Smithery
+
+This project can be deployed on Smithery.ai for production use. Follow these steps to deploy:
+
+1. Install the Smithery CLI:
+```bash
+pip install smithery-cli
+```
+
+2. Login to Smithery:
+```bash
+smithery login
+```
+
+3. Deploy the application:
+```bash
+smithery deploy
+```
+
+The deployment configuration is defined in `smithery.yaml`. The following environment variables can be configured in your Smithery dashboard:
+
+- `HOST`: The host address to bind to (default: 0.0.0.0)
+- `PORT`: The port to listen on (default: 8000)
+- `LOG_LEVEL`: Logging level (default: INFO)
+
+### Monitoring and Scaling
+
+The application includes health check endpoints at `/health` that Smithery uses to monitor the application's status. The deployment is configured to:
+
+- Scale between 1 and 3 instances based on CPU utilization
+- Use 1 CPU core and 512MB of memory per instance
+- Perform health checks every 10 seconds
+- Auto-heal instances that fail health checks
+
+### Local Development
+
+For local development, you can still run the server using:
+
+```bash
+python src/server_sse.py
+```
+
+The server will start on http://127.0.0.1:8000 by default. 
