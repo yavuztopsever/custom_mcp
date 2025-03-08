@@ -1,6 +1,9 @@
 name: custom-mcp-server
 version: 1.0.0
 description: Custom MCP server with code analysis, formatting, and documentation tools
+repository: https://github.com/yavuztopsever/custom_mcp
+author: yavuztopsever
+license: MIT
 
 build:
   type: docker
@@ -40,6 +43,11 @@ scaling:
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 80
+
+configSchema:
+  type: "object"
+  properties: {}
+  required: []
 
 commandFunction: |
   function getCommand(config) {
