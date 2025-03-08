@@ -75,12 +75,35 @@ class StdioHandler:
             logger.error(f"Error writing message: {e}")
 
     async def _handle_initialize(self, params: Dict[str, Any], request_id: Any) -> Dict[str, Any]:
-        """Handle the initialize request."""
+        """Handle the initialize request according to MCP specification."""
         self.initialized = True
+        
+        # Get available tools with their metadata
+        tools = self.tool_manager.get_available_tools()
+        
+        # Create the initialization response according to MCP spec
         capabilities = {
-            "version": "1.0.0",
-            "tools": self.tool_manager.get_available_tools()
+            "protocolVersion": "1.0.0",  # MCP protocol version
+            "capabilities": {
+                "tools": tools,
+                "supportedMethods": [
+                    "initialize",
+                    "execute",
+                    "get_tools"
+                ],
+                "textDocumentSync": 1,  # Incremental updates
+                "executeCommandProvider": {
+                    "commands": list(tools.keys())
+                }
+            },
+            "serverInfo": {
+                "name": "Custom MCP Server",
+                "version": "1.0.0",
+                "supportedLanguages": ["python"],
+                "documentationUrl": "https://github.com/yavuztopsever/custom_mcp"
+            }
         }
+        
         return self._create_response(request_id, result=capabilities)
 
     async def _handle_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
