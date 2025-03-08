@@ -1,75 +1,59 @@
 """
-Tool manager for integrating MCP tools with the WebSocket server.
+Tool manager for Sequential Thinking MCP server.
 """
 
-import importlib
-import inspect
 import logging
-import os
-from pathlib import Path
-from typing import Dict, Any, List, Type
-
-from mcp_tools.core.base_tool import BaseTool
-from mcp_tools.core.config_manager import ConfigManager
+from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
 class ToolManager:
     def __init__(self):
-        self.config_manager = ConfigManager()
-        self.tools: Dict[str, BaseTool] = {}
-        self._load_tools()
-
-    def _load_tools(self) -> None:
-        """Load all available tools from the mcp_tools/tools directory."""
-        tools_dir = Path(__file__).parent.parent / "mcp_tools" / "tools"
-        if not tools_dir.exists():
-            logger.warning(f"Tools directory not found: {tools_dir}")
-            return
-
-        for file in tools_dir.glob("*.py"):
-            if file.name.startswith("__"):
-                continue
-
-            try:
-                # Import the module
-                module_path = f"mcp_tools.tools.{file.stem}"
-                module = importlib.import_module(module_path)
-
-                # Find tool classes (subclasses of BaseTool)
-                for name, obj in inspect.getmembers(module):
-                    if (inspect.isclass(obj) and 
-                        issubclass(obj, BaseTool) and 
-                        obj != BaseTool):
-                        tool = obj(config_manager=self.config_manager)
-                        self.tools[tool.name] = tool
-                        logger.info(f"Loaded tool: {tool.name}")
-
-            except Exception as e:
-                logger.error(f"Error loading tool from {file}: {e}")
-
-    def get_available_tools(self) -> List[str]:
-        """Get list of available tool names."""
-        return list(self.tools.keys())
-
-    async def execute_command(self, command: str, args: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a tool command."""
-        if command not in self.tools:
-            return {
-                "status": "error",
-                "message": f"Unknown tool: {command}"
+        self.tools = {
+            "mcp__sequentialthinking": {
+                "name": "mcp__sequentialthinking",
+                "description": "Sequential thinking tool for complex problem solving",
+                "parameters": {
+                    "thought": {"type": "string", "description": "Current thinking step"},
+                    "nextThoughtNeeded": {"type": "boolean", "description": "Whether another thought is needed"},
+                    "thoughtNumber": {"type": "integer", "description": "Current thought number"},
+                    "totalThoughts": {"type": "integer", "description": "Total thoughts needed"},
+                    "isRevision": {"type": "boolean", "description": "Whether this revises previous thinking"},
+                    "revisesThought": {"type": "integer", "description": "Which thought is being reconsidered"},
+                    "branchFromThought": {"type": "integer", "description": "Branching point thought number"},
+                    "branchId": {"type": "string", "description": "Branch identifier"},
+                    "needsMoreThoughts": {"type": "boolean", "description": "If more thoughts are needed"}
+                },
+                "required": ["thought", "nextThoughtNeeded", "thoughtNumber", "totalThoughts"]
             }
+        }
 
-        try:
-            tool = self.tools[command]
-            result = tool.run(**args)
-            return {
-                "status": "success",
-                "data": result
-            }
-        except Exception as e:
-            logger.error(f"Error executing tool {command}: {e}")
-            return {
-                "status": "error",
-                "message": str(e)
-            } 
+    def get_capabilities(self) -> Dict[str, Any]:
+        """Get server capabilities."""
+        return {
+            "sequential_thinking": True,
+            "tools": list(self.tools.keys())
+        }
+
+    def get_available_tools(self) -> List[Dict[str, Any]]:
+        """Get list of available tools with their specifications."""
+        return list(self.tools.values())
+
+    async def execute_tool(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute a tool with given parameters."""
+        if tool_name not in self.tools:
+            raise ValueError(f"Unknown tool: {tool_name}")
+
+        tool = self.tools[tool_name]
+        
+        # Validate required parameters
+        missing_params = [param for param in tool["required"] if param not in params]
+        if missing_params:
+            raise ValueError(f"Missing required parameters: {', '.join(missing_params)}")
+
+        # For sequential thinking tool, just echo back the parameters
+        # as it's handled by the AI model
+        if tool_name == "mcp__sequentialthinking":
+            return params
+
+        raise ValueError(f"Tool execution not implemented: {tool_name}") 

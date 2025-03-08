@@ -1,16 +1,13 @@
 """
-MCP Server implementation with WebSocket support.
+Sequential Thinking MCP Server implementation with JSON-RPC and SSE support.
 """
 
 import asyncio
 import json
 import logging
 import os
+import sys
 from typing import Dict, Any, Optional
-
-import websockets
-from websockets.server import WebSocketServerProtocol
-from aiohttp import web
 
 from .tool_manager import ToolManager
 
@@ -21,123 +18,100 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class MCPServer:
+class SequentialThinkingServer:
     def __init__(self, tool_manager: Optional[ToolManager] = None):
-        self.host = os.getenv("MCP_SERVER_HOST", "0.0.0.0")
-        self.port = int(os.getenv("MCP_SERVER_PORT", "25565"))
-        self.auth_token = os.getenv("MCP_AUTH_TOKEN")
         self.tool_manager = tool_manager or ToolManager()
-        self.app = web.Application()
-        self.app.router.add_get("/health", self.health_check)
-        
-    async def health_check(self, request):
-        """Health check endpoint."""
-        return web.Response(text="OK", status=200)
-        
-    async def handle_client(self, websocket: WebSocketServerProtocol):
-        """Handle client connection and messages."""
-        try:
-            # Handle authentication
-            auth_msg = await websocket.recv()
-            try:
-                auth_data = json.loads(auth_msg)
-                if not isinstance(auth_data, dict):
-                    await websocket.send(json.dumps({
-                        "status": "error",
-                        "message": "Authentication data must be a JSON object"
-                    }))
-                    return
-                    
-                if not self._authenticate(auth_data):
-                    await websocket.send(json.dumps({
-                        "status": "error",
-                        "message": "Authentication failed"
-                    }))
-                    return
-                    
-                await websocket.send(json.dumps({
-                    "status": "success",
-                    "message": "Authentication successful"
-                }))
-                
-                # Handle commands
-                async for message in websocket:
-                    try:
-                        data = json.loads(message)
-                        if not isinstance(data, dict):
-                            await websocket.send(json.dumps({
-                                "status": "error",
-                                "message": "Message must be a JSON object"
-                            }))
-                            continue
-                            
-                        response = await self._handle_command(data)
-                        await websocket.send(json.dumps(response))
-                    except json.JSONDecodeError:
-                        await websocket.send(json.dumps({
-                            "status": "error",
-                            "message": "Invalid JSON format"
-                        }))
-                    except Exception as e:
-                        logger.error(f"Error handling command: {e}")
-                        await websocket.send(json.dumps({
-                            "status": "error",
-                            "message": str(e)
-                        }))
-            except json.JSONDecodeError:
-                await websocket.send(json.dumps({
-                    "status": "error",
-                    "message": "Invalid JSON format in authentication message"
-                }))
-                return
-                    
-        except Exception as e:
-            logger.error(f"Connection error: {e}")
-    
-    def _authenticate(self, auth_data: Dict[str, Any]) -> bool:
-        """Validate client authentication."""
-        return (
-            auth_data.get("type") == "auth" and
-            auth_data.get("token") == self.auth_token
-        )
-    
-    async def _handle_command(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle incoming commands."""
-        command_type = data.get("type")
-        if command_type == "command":
-            command = data.get("command")
-            args = data.get("args", {})
-            return await self.tool_manager.execute_command(command, args)
-        elif command_type == "query":
-            query = data.get("query")
-            if query == "get_available_tools":
-                return {
-                    "status": "success",
-                    "data": {
-                        "tools": self.tool_manager.get_available_tools()
-                    }
-                }
-        return {
-            "status": "error",
-            "message": f"Unknown command type: {command_type}"
+        self.protocol_version = "2024-11-05"
+        self.server_info = {
+            "name": "sequential-thinking-server",
+            "version": "0.2.0"
         }
-    
-    async def start(self):
-        """Start the WebSocket server and HTTP server."""
-        logger.info(f"Starting MCP server on {self.host}:{self.port}")
-        
-        # Start HTTP server for health checks
-        runner = web.AppRunner(self.app)
-        await runner.setup()
-        site = web.TCPSite(runner, self.host, self.port + 1)  # Health check on port+1
-        await site.start()
-        logger.info(f"Health check endpoint available at http://{self.host}:{self.port + 1}/health")
-        
-        # Start WebSocket server
-        async with websockets.serve(self.handle_client, self.host, self.port):
-            await asyncio.Future()  # run forever
+
+    async def handle_initialize(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle initialize request."""
+        return {
+            "protocolVersion": self.protocol_version,
+            "capabilities": {
+                "tools": self.tool_manager.get_capabilities()
+            },
+            "serverInfo": self.server_info
+        }
+
+    async def handle_tools_list(self) -> Dict[str, Any]:
+        """Handle tools/list request."""
+        return {
+            "tools": self.tool_manager.get_available_tools()
+        }
+
+    async def handle_request(self, request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Handle JSON-RPC request."""
+        method = request.get("method")
+        params = request.get("params", {})
+        request_id = request.get("id")
+
+        if method == "initialize":
+            result = await self.handle_initialize(params)
+        elif method == "notifications/initialized":
+            return None  # No response needed for notifications
+        elif method == "tools/list":
+            result = await self.handle_tools_list()
+        else:
+            result = {
+                "error": {
+                    "code": -32601,
+                    "message": f"Method not found: {method}"
+                }
+            }
+
+        response = {"jsonrpc": "2.0"}
+        if request_id is not None:
+            response["id"] = request_id
+        if "error" in result:
+            response["error"] = result["error"]
+        else:
+            response["result"] = result
+
+        return response
+
+    async def process_stdio(self):
+        """Process JSON-RPC messages via stdio."""
+        while True:
+            try:
+                line = await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
+                if not line:
+                    break
+
+                try:
+                    request = json.loads(line)
+                    response = await self.handle_request(request)
+                    if response:
+                        print(json.dumps(response), flush=True)
+                except json.JSONDecodeError:
+                    logger.error("Invalid JSON received")
+                    print(json.dumps({
+                        "jsonrpc": "2.0",
+                        "error": {
+                            "code": -32700,
+                            "message": "Parse error"
+                        }
+                    }), flush=True)
+
+            except Exception as e:
+                logger.error(f"Error processing request: {e}")
+                print(json.dumps({
+                    "jsonrpc": "2.0",
+                    "error": {
+                        "code": -32603,
+                        "message": "Internal error"
+                    }
+                }), flush=True)
+
+    def start(self):
+        """Start the Sequential Thinking MCP Server."""
+        logger.info("Sequential Thinking MCP Server running on stdio")
+        asyncio.run(self.process_stdio())
 
 def main():
     """Main entry point."""
-    server = MCPServer()
-    asyncio.run(server.start()) 
+    server = SequentialThinkingServer()
+    server.start() 
