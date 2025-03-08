@@ -17,9 +17,10 @@ COPY . .
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV LOG_LEVEL=INFO
+ENV PYTHONUNBUFFERED=1
 
 # Expose the port
 EXPOSE 8000
 
-# Run the server
-CMD ["python", "-m", "src.server_sse"] 
+# Run the server with proper logging
+CMD ["python", "-u", "-m", "src.server_sse"] 
