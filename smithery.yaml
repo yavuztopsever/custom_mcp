@@ -1,19 +1,14 @@
-name: custom-mcp-server
-version: 1.0.0
+name: cursor-mcp-server
 description: Custom MCP server with code analysis, formatting, and documentation tools
-repository: https://github.com/yavuztopsever/custom_mcp
-author: yavuztopsever
-license: MIT
 
 build:
   type: docker
   dockerfile: Dockerfile
-  context: .
 
-deployment:
-  type: websocket
+deploy:
+  type: service
   port: 8000
-  health:
+  healthCheck:
     path: /health
     initialDelaySeconds: 5
     periodSeconds: 10
@@ -21,23 +16,21 @@ deployment:
     successThreshold: 1
     failureThreshold: 3
 
-environment:
+env:
   - name: HOST
     value: "0.0.0.0"
   - name: PORT
     value: "8000"
   - name: LOG_LEVEL
-    value: "INFO"
-  - name: PYTHONUNBUFFERED
-    value: "1"
+    value: "DEBUG"
 
 resources:
   limits:
     cpu: "1"
-    memory: "512Mi"
+    memory: "1Gi"
   requests:
-    cpu: "200m"
-    memory: "256Mi"
+    cpu: "500m"
+    memory: "512Mi"
 
 scaling:
   minReplicas: 1

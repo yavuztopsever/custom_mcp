@@ -16,11 +16,11 @@ COPY . .
 # Set environment variables
 ENV HOST=0.0.0.0
 ENV PORT=8000
-ENV LOG_LEVEL=INFO
+ENV LOG_LEVEL=DEBUG
 ENV PYTHONUNBUFFERED=1
 
 # Expose the port
 EXPOSE 8000
 
-# Run the server with proper logging
-CMD ["python", "-u", "-m", "src.server_sse"] 
+# Run the server with uvicorn
+CMD ["uvicorn", "src.server_sse:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"] 
