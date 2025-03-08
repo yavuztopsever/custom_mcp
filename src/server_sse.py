@@ -1,9 +1,8 @@
 from mcp.server.fastmcp import FastMCP
-from mcp.server.sse import SseServerTransport
+from mcp.server.websocket import WebSocketServerTransport
 import os
 from dotenv import load_dotenv
 from .tools import CodeAnalyzerTool, CodeFormatterTool, CodeDocumenterTool
-from starlette.responses import JSONResponse
 
 # Load environment variables
 load_dotenv()
@@ -13,11 +12,6 @@ app = FastMCP(
     name="Cursor MCP Server",
     instructions="A custom MCP server for Cursor with code analysis, formatting, and documentation tools."
 )
-
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    return JSONResponse({"status": "healthy"})
 
 # Register tools
 @app.tool(name="analyze_code", description="Analyzes Python code for potential issues and improvements.")
@@ -42,4 +36,9 @@ app.settings.log_level = os.getenv("LOG_LEVEL", "INFO")
 
 # For local development
 if __name__ == "__main__":
-    app.run(transport="sse") 
+    transport = WebSocketServerTransport(
+        host=app.settings.host,
+        port=app.settings.port,
+        health_check_path="/health"
+    )
+    app.run(transport=transport) 
