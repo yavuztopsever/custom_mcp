@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import websockets
 from websockets.server import WebSocketServerProtocol
@@ -22,11 +22,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class MCPServer:
-    def __init__(self):
+    def __init__(self, tool_manager: Optional[ToolManager] = None):
         self.host = os.getenv("MCP_SERVER_HOST", "0.0.0.0")
         self.port = int(os.getenv("MCP_SERVER_PORT", "25565"))
         self.auth_token = os.getenv("MCP_AUTH_TOKEN")
-        self.tool_manager = ToolManager()
+        self.tool_manager = tool_manager or ToolManager()
         self.app = web.Application()
         self.app.router.add_get("/health", self.health_check)
         

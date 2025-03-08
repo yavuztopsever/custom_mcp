@@ -21,9 +21,10 @@ RUN mkdir -p /app/mcp_tools /app/config /app/logs
 ENV PYTHONPATH=/app
 ENV MCP_SERVER_HOST=0.0.0.0
 ENV LOG_LEVEL=INFO
+ENV MCP_SERVER_MODE=stdio
 
 # Expose the WebSocket port
 EXPOSE 25565
 
-# Start the MCP server using the Python module
+# Start the MCP server in stdio mode
 CMD ["python", "-m", "src"] 
