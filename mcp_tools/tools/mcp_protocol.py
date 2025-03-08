@@ -65,6 +65,9 @@ class MCPProtocolTool(BaseTool):
     def _process_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
         """Process incoming messages and generate responses."""
         try:
+            if not isinstance(message, dict):
+                return {'status': 'error', 'message': 'Message must be a JSON object'}
+
             msg_type = message.get('type')
             if not msg_type:
                 return {'status': 'error', 'message': 'Missing message type'}

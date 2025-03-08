@@ -39,37 +39,57 @@ class MCPServer:
         try:
             # Handle authentication
             auth_msg = await websocket.recv()
-            auth_data = json.loads(auth_msg)
-            
-            if not self._authenticate(auth_data):
+            try:
+                auth_data = json.loads(auth_msg)
+                if not isinstance(auth_data, dict):
+                    await websocket.send(json.dumps({
+                        "status": "error",
+                        "message": "Authentication data must be a JSON object"
+                    }))
+                    return
+                    
+                if not self._authenticate(auth_data):
+                    await websocket.send(json.dumps({
+                        "status": "error",
+                        "message": "Authentication failed"
+                    }))
+                    return
+                    
+                await websocket.send(json.dumps({
+                    "status": "success",
+                    "message": "Authentication successful"
+                }))
+                
+                # Handle commands
+                async for message in websocket:
+                    try:
+                        data = json.loads(message)
+                        if not isinstance(data, dict):
+                            await websocket.send(json.dumps({
+                                "status": "error",
+                                "message": "Message must be a JSON object"
+                            }))
+                            continue
+                            
+                        response = await self._handle_command(data)
+                        await websocket.send(json.dumps(response))
+                    except json.JSONDecodeError:
+                        await websocket.send(json.dumps({
+                            "status": "error",
+                            "message": "Invalid JSON format"
+                        }))
+                    except Exception as e:
+                        logger.error(f"Error handling command: {e}")
+                        await websocket.send(json.dumps({
+                            "status": "error",
+                            "message": str(e)
+                        }))
+            except json.JSONDecodeError:
                 await websocket.send(json.dumps({
                     "status": "error",
-                    "message": "Authentication failed"
+                    "message": "Invalid JSON format in authentication message"
                 }))
                 return
-                
-            await websocket.send(json.dumps({
-                "status": "success",
-                "message": "Authentication successful"
-            }))
-            
-            # Handle commands
-            async for message in websocket:
-                try:
-                    data = json.loads(message)
-                    response = await self._handle_command(data)
-                    await websocket.send(json.dumps(response))
-                except json.JSONDecodeError:
-                    await websocket.send(json.dumps({
-                        "status": "error",
-                        "message": "Invalid JSON format"
-                    }))
-                except Exception as e:
-                    logger.error(f"Error handling command: {e}")
-                    await websocket.send(json.dumps({
-                        "status": "error",
-                        "message": str(e)
-                    }))
                     
         except Exception as e:
             logger.error(f"Connection error: {e}")

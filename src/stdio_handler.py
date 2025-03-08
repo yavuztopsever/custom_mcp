@@ -154,19 +154,24 @@ class StdioHandler:
         logger.info("Starting stdio handler with JSON-RPC 2.0 support")
         try:
             while True:
+                message = None
                 try:
                     message = await self._read_message()
                     response = await self._handle_message(message)
                     await self._write_message(response)
                 except JsonRpcError as e:
+                    # Get request ID safely, handling non-dictionary messages
+                    request_id = message.get("id") if isinstance(message, dict) else None
                     await self._write_message(self._create_response(
-                        message.get("id") if isinstance(message, dict) else None,
+                        request_id,
                         error=self._create_error(e.code, e.message, e.data)
                     ))
                 except Exception as e:
                     logger.error(f"Unexpected error: {e}")
+                    # Get request ID safely, handling non-dictionary messages
+                    request_id = message.get("id") if isinstance(message, dict) else None
                     await self._write_message(self._create_response(
-                        message.get("id") if isinstance(message, dict) else None,
+                        request_id,
                         error=self._create_error(self.INTERNAL_ERROR, "Internal error", str(e))
                     ))
         except EOFError:
