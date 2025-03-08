@@ -1,0 +1,52 @@
+name: custom-mcp-server
+version: 1.0.0
+description: Custom MCP Server for Minecraft modding with advanced tooling support
+
+# Server configuration
+server:
+  type: websocket
+  port: 25565
+  host: 0.0.0.0
+
+# Authentication configuration
+auth:
+  type: token
+  required: true
+
+# Tool configuration
+tools:
+  clean_code:
+    enabled: true
+    config:
+      line_length: 88
+      use_black: true
+      use_flake8: true
+      use_mypy: true
+
+# Environment variables
+environment:
+  - name: MCP_AUTH_TOKEN
+    required: true
+    description: Authentication token for MCP server
+  - name: OPENAI_API_KEY
+    required: true
+    description: OpenAI API key for GPT-4 integration
+  - name: LOG_LEVEL
+    required: false
+    default: INFO
+    description: Logging level for the server
+
+# Deployment configuration
+deployment:
+  type: serverless
+  memory: 1024
+  timeout: 300
+  python_version: "3.9"
+  requirements: requirements.txt
+
+# Health check configuration
+health:
+  path: /health
+  interval: 30
+  timeout: 5
+  retries: 3 

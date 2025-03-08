@@ -1,0 +1,29 @@
+# Global configuration for MCP tools
+
+# Logging configuration (can be overridden by LOG_LEVEL env var)
+logging:
+  level: INFO
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+# OpenAI configuration (API key loaded from OPENAI_API_KEY env var)
+openai:
+  model: gpt-4o-mini
+
+# Tool-specific configurations
+tools:
+  # Code cleaning tool configuration
+  clean_code:
+    target_extensions: ['.py']
+    exclude_dirs: ['venv', '.venv', '__pycache__', '.git']
+    line_length: 88
+    use_black: true
+    use_flake8: true
+    use_mypy: true
+
+  # MCP Protocol server configuration (can be overridden by env vars)
+  mcp_protocol:
+    host: localhost  # Override with MCP_SERVER_HOST
+    port: 25565      # Override with MCP_SERVER_PORT
+    max_connections: 5
+    buffer_size: 4096
+    timeout: 60

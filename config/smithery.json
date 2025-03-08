@@ -1,0 +1,37 @@
+{
+    "name": "custom-mcp-server",
+    "description": "Custom MCP Server for Minecraft modding with advanced tooling support",
+    "version": "1.0.0",
+    "transport": {
+        "type": "ws",
+        "port": 25565
+    },
+    "configSchema": {
+        "type": "object",
+        "properties": {
+            "mcp_auth_token": {
+                "type": "string",
+                "description": "Authentication token for MCP server"
+            },
+            "openai_api_key": {
+                "type": "string",
+                "description": "OpenAI API key for GPT-4 integration"
+            },
+            "log_level": {
+                "type": "string",
+                "enum": ["DEBUG", "INFO", "WARNING", "ERROR"],
+                "default": "INFO",
+                "description": "Logging level for the server"
+            }
+        },
+        "required": ["mcp_auth_token", "openai_api_key"]
+    },
+    "deployment": {
+        "type": "serverless",
+        "timeout": 300,
+        "memory": 1024,
+        "environment": {
+            "PYTHON_VERSION": "3.9"
+        }
+    }
+} 

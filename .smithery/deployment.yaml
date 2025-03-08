@@ -1,0 +1,30 @@
+version: "1.0"
+name: custom-mcp-server
+
+build:
+  type: docker
+  dockerfile: Dockerfile
+  context: .
+
+runtime:
+  type: serverless
+  memory: 1024
+  timeout: 300
+  environment:
+    PYTHON_VERSION: "3.9"
+
+scaling:
+  min: 1
+  max: 5
+  target_cpu_utilization: 70
+
+health:
+  path: /health
+  port: 25566  # health check port (main port + 1)
+  interval: 30
+  timeout: 5
+  retries: 3
+
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s" 

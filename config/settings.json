@@ -1,0 +1,22 @@
+{
+    "source_dir": "src/main/java",
+    "resource_dir": "src/main/resources",
+    "backup_dir": "backup",
+    "java_version": "1.8",
+    "mcp_version": "1.12.2",
+    "checkstyle": {
+        "config_file": "config/checkstyle.xml",
+        "max_line_length": 100,
+        "indent_size": 4
+    },
+    "build": {
+        "output_dir": "build",
+        "temp_dir": "temp",
+        "clean_build": true
+    },
+    "documentation": {
+        "output_dir": "docs",
+        "generate_javadoc": true,
+        "javadoc_access": "protected"
+    }
+} 
