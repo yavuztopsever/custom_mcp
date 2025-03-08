@@ -1,3 +1,6 @@
+# Smithery configuration file
+# See: https://smithery.ai/docs/config#smitheryyaml
+
 name: custom-mcp-server
 version: 1.0.0
 description: Custom MCP Server for Minecraft modding with advanced tooling support
@@ -49,4 +52,39 @@ health:
   path: /health
   interval: 30
   timeout: 5
-  retries: 3 
+  retries: 3
+
+build:
+  # Use the Dockerfile in the current directory
+  dockerBuildPath: .
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP
+    type: object
+    properties:
+      log_level:
+        type: string
+        description: The logging level for the server (DEBUG, INFO, WARNING, ERROR)
+        enum: ["DEBUG", "INFO", "WARNING", "ERROR"]
+        default: "INFO"
+      host:
+        type: string
+        description: The host address for WebSocket mode (not used in stdio mode)
+        default: "localhost"
+      port:
+        type: integer
+        description: The port number for WebSocket mode (not used in stdio mode)
+        default: 8765
+  commandFunction: |
+    (config) => ({
+      command: 'python',
+      args: ['-m', 'src'],
+      env: {
+        LOG_LEVEL: config.log_level || 'INFO',
+        MCP_SERVER_MODE: 'stdio',
+        MCP_SERVER_HOST: config.host || 'localhost',
+        MCP_SERVER_PORT: String(config.port || 8765)
+      }
+    }) 
