@@ -1,1 +1,0 @@
-"""Custom MCP server for Cursor.""" 
