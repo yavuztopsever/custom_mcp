@@ -1,0 +1,6 @@
+anyio>=3.0.0 
+pydantic>=2.0.0 
+sse-starlette>=0.8.4 
+httpx>=0.23.0 
+uvicorn>=0.18.0 
+pydantic-settings>=1.0.1 
